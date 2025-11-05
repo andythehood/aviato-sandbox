@@ -41,13 +41,23 @@ resource "google_compute_global_address" "lb_ip" {
 # -----------------------------
 
 locals {
-  fqdn_hosts = [
+  unique_fqdn_hosts = [
     for host in var.site_hosts :
     {
       prefix = host
-      fqdn   = "${host}-${google_compute_global_address.lb_ip.address}.nip.io"
+      rule   = host
+      fqdn   = "${host}.apps.tada.com.au"
+      # fqdn   = "${host}-${google_compute_global_address.lb_ip.address}.nip.io"
     }
   ]
+  wildcard_host = [{
+    prefix = "core"
+    rule   = "wildcard"
+    fqdn   = "*.apps.tada.com.au"
+  }]
+
+  fqdn_hosts = concat(local.unique_fqdn_hosts, local.wildcard_host)
+
 }
 
 # -----------------------------
@@ -55,7 +65,7 @@ locals {
 # -----------------------------
 
 resource "google_compute_backend_bucket" "site_backends" {
-  for_each = { for h in local.fqdn_hosts : h.prefix => h }
+  for_each = { for h in local.unique_fqdn_hosts : h.prefix => h }
 
   name        = "${each.key}-backend"
   bucket_name = google_storage_bucket.static_site.name
@@ -71,12 +81,12 @@ resource "google_compute_backend_bucket" "site_backends" {
 # 5️⃣ HTTPS Certificate
 # -----------------------------
 
-resource "google_compute_managed_ssl_certificate" "cert" {
-  name = "${var.bucket_name}-cert"
-  managed {
-    domains = [for h in local.fqdn_hosts : h.fqdn]
-  }
-}
+# resource "google_compute_managed_ssl_certificate" "cert" {
+#   name = "${var.bucket_name}-cert"
+#   managed {
+#     domains = [for h in local.fqdn_hosts : h.fqdn]
+#   }
+# }
 
 # -----------------------------
 # 6️⃣   Advanced URL Map Host Match and Path rewrite
@@ -89,14 +99,14 @@ resource "google_compute_url_map" "advanced_map" {
     for_each = local.fqdn_hosts
     content {
       hosts        = [host_rule.value.fqdn]
-      path_matcher = host_rule.value.prefix
+      path_matcher = host_rule.value.rule
     }
   }
 
   dynamic "path_matcher" {
     for_each = local.fqdn_hosts
     content {
-      name            = path_matcher.value.prefix
+      name            = path_matcher.value.rule
       default_service = google_compute_backend_bucket.site_backends[path_matcher.value.prefix].id
       default_custom_error_response_policy {
         error_response_rule {
@@ -134,7 +144,10 @@ resource "google_compute_target_https_proxy" "https_proxy" {
   name    = "${var.bucket_name}-https-proxy"
   url_map = google_compute_url_map.advanced_map.name
 
-  ssl_certificates = [google_compute_managed_ssl_certificate.cert.id]
+  certificate_map = "//certificatemanager.googleapis.com/${google_certificate_manager_certificate_map.default.id}"
+  # ssl_certificates = [
+  #   google_compute_managed_ssl_certificate.cert.id,
+  # ]
 }
 
 # -----------------------------
