@@ -5,6 +5,10 @@ on:
     branches: [ "main" ]
     paths:
       - "web/**"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "web/**"
   workflow_dispatch:
 
 jobs:
@@ -21,10 +25,14 @@ jobs:
         id: detect
         run: |
           echo "Detecting changed apps..."
-          git fetch origin main
+          # Compare with the base commit (for PRs) or previous SHA (for push)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE=${{ github.event.pull_request.base.sha }}
+          else
+            BASE=${{ github.event.before }}
+          fi
 
-          # List changed files since last main commit
-          CHANGED_PATHS=$(git diff --name-only origin/main...HEAD | grep '^web/' || true)
+          CHANGED_PATHS=$(git diff --name-only "$BASE" ${{ github.sha }} | xargs)
 
           if [ -z "$CHANGED_PATHS" ]; then
             echo "No app changes detected."
