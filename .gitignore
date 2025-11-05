@@ -85,7 +85,7 @@ template-onboard.sh
 .terraform/
 *.tfstate
 *.tfstate.backup
-*.tfvars
+# *.tfvars
 .terraform.lock.hcl
 
 # Build outputs
