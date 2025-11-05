@@ -102,8 +102,8 @@ jobs:
       - name: 📤 Upload build to GCS
         uses: google-github-actions/upload-cloud-storage@v3
         with:
-          path: web/${{ matrix.app }}/dist/**
-          destination: gs://${{ env.GCS_BUCKET }}/${{ matrix.app }}/
+          path: web/${{ matrix.app }}/dist
+          destination: ${{ env.GCS_BUCKET }}/${{ matrix.app }}
           parent: false
         #   overwrite: true
 
