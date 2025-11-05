@@ -56,11 +56,17 @@ jobs:
 
     env:
       NODE_VERSION: 22
+      PNPM_VERSION: 10.20.0
       GCP_PROJECT: ${{ vars.GCP_PROJECT }}
       GCS_BUCKET: ${{ vars.GCS_BUCKET_APPS }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
 
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
@@ -68,10 +74,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
-      - name: 📦 Setup PNPM (no Corepack)
-        run: |
-          npm install -g pnpm@10
-          pnpm --version
+      # - name: 📦 Setup PNPM (no Corepack)
+      #   run: |
+      #     npm install -g pnpm@10
+      #     pnpm --version
 
       - name: 📚 Install dependencies
         run: pnpm install --frozen-lockfile
