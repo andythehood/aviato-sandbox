@@ -110,6 +110,6 @@ jobs:
       - name: 🌎 Invalidate CDN cache for this app
         run: |
           echo "Invalidating CDN cache for /${{ matrix.app }}/*"
-          gcloud compute backend-buckets invalidate-cdn-cache "${{ matrix.app }}-backend" \
+          gcloud compute url-maps invalidate-cdn-cache "${{ env.GCS_BUCKET }}-map" \
             --path "/${{ matrix.app }}/*"
 
