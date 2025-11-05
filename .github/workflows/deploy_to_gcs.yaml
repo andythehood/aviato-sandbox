@@ -111,5 +111,5 @@ jobs:
         run: |
           echo "Invalidating CDN cache for /${{ matrix.app }}/*"
           gcloud compute url-maps invalidate-cdn-cache "${{ env.GCS_BUCKET }}-map" \
-            --path "/${{ matrix.app }}/*"
+            --path "/*"
 
