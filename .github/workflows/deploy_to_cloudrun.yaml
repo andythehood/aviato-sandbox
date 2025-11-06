@@ -93,7 +93,7 @@ jobs:
           --allow-unauthenticated
 
           # Explicitly set IAM policy for public access
-          gcloud beta run services add-iam-policy-binding "${{ matrix.app  }}" \
+          gcloud run services add-iam-policy-binding "${{ matrix.app  }}" \
             --region "${{ env.REGION }}" \
             --member=allUsers \
             --role=roles/run.invoker
