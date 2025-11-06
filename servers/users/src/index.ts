@@ -11,7 +11,7 @@ app.use('/health', healthRouter);
 
 
 app.get('/', (req, res) => {
-res.json({ message: 'Welcome to Users Service on Cloud Run' });
+res.json({ message: 'Users Service on Cloud Run' });
 });
 
 

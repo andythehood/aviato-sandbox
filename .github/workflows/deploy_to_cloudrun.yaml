@@ -57,7 +57,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.apps != '[]' && needs.detect-changes.outputs.apps != '' }}
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1  # sequential deploys
+      max-parallel: 3  # sequential deploys
       matrix:
         app: ${{ fromJson(needs.detect-changes.outputs.apps) }}
     
@@ -92,7 +92,7 @@ jobs:
           --platform managed \
           --allow-unauthenticated \
           --ingress internal-and-cloud-load-balancing \
-          --vpc-egress all-traffic 
+          --vpc-egress all-traffic \
           --network internal-vpc \
           --subnet internal-vpc
 
