@@ -90,7 +90,12 @@ jobs:
           --image "$IMAGE" \
           --region "${{ env.REGION }}" \
           --platform managed \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --ingress internal-and-cloud-load-balancing \
+          --vpc-egress all-traffic \
+          --network internal_vpc \
+          --subnet internal_vpc
+
 
           # Explicitly set IAM policy for public access
           gcloud run services add-iam-policy-binding "${{ matrix.app  }}" \
