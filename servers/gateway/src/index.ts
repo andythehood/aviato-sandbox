@@ -16,7 +16,7 @@ app.use('/health', healthRouter);
 
 app.get('/sites', async (req, res) => {
 
-  const targetUrl = "http://sites.us-central1.run.internal";
+  const targetUrl = "https://sites-537073366159.us-central1.run.app";
 
   const resp = await fetch(targetUrl, {});
 
@@ -29,15 +29,23 @@ app.get('/sites', async (req, res) => {
 
 app.get('/users', async (req, res) => {
 
-  const targetUrl = "http://users.us-central1.run.internal";
+  try {
 
-  const resp = await fetch(targetUrl, {});
 
-  const data = await resp.json();
+    const targetUrl = "https://users-537073366159.us-central1.run.app";
 
-  console.log(data);
+    const resp = await fetch(targetUrl, {});
 
-  res.json({ message: 'Calling Remote Users Service on Cloud Run', data });
+    const data = await resp.json();
+
+    console.log(data);
+
+    res.json({ message: 'Calling Remote Users Service on Cloud Run', data });
+  }
+  catch (err) {
+    res.json({ message: 'Error Calling Remote Users Service on Cloud Run', err });
+
+  }
 });
 
 
