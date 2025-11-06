@@ -92,10 +92,9 @@ jobs:
           --platform managed \
           --allow-unauthenticated \
           --ingress internal-and-cloud-load-balancing \
-          --vpc-egress all-traffic \
-          --network internal_vpc \
-          --subnet internal_vpc
-
+          --vpc-egress all-traffic 
+          --network internal-vpc \
+          --subnet internal-vpc
 
           # Explicitly set IAM policy for public access
           gcloud run services add-iam-policy-binding "${{ matrix.app  }}" \
