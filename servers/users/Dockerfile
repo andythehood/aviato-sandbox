@@ -9,7 +9,7 @@ WORKDIR /app
 COPY pnpm-lock.yaml package.json .npmrc pnpm-workspace.yaml ./
 
 # Copy workspace packages (monorepo structure)
-COPY servers/ ./servers/
+COPY servers/users ./servers/users
 
 # Install only deps for this workspace package
 RUN pnpm install --filter ./servers/users... --frozen-lockfile
