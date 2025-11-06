@@ -11,7 +11,7 @@ app.use('/health', healthRouter);
 
 
 app.get('/', (req, res) => {
-res.json({ message: 'Hello from Gateway Service on Cloud Run' });
+res.json({ message: 'Welcome to Gateway Service on Cloud Run' });
 });
 
 
