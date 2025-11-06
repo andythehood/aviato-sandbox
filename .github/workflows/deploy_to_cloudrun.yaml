@@ -86,8 +86,14 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           IMAGE=${{env.REGION}}-docker.pkg.dev/${{ env.GCP_PROJECT }}/${{ env.REPOSITORY }}/${{ matrix.app}}:${{ github.sha }}
-          gcloud run deploy "${{ env.SERVICE_NAME }}" \
+          gcloud run deploy "${{ matrix.app  }}" \
           --image "$IMAGE" \
           --region "${{ env.REGION }}" \
           --platform managed \
           --allow-unauthenticated
+
+          # Explicitly set IAM policy for public access
+          gcloud beta run services add-iam-policy-binding "${{ matrix.app  }}" \
+            --region "${{ env.REGION }}" \
+            --member=allUsers \
+            --role=roles/run.invoker
