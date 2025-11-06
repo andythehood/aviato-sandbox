@@ -12,7 +12,7 @@ COPY pnpm-lock.yaml package.json .npmrc pnpm-workspace.yaml ./
 COPY servers/sites ./servers/sites
 
 # Install only deps for this workspace package
-RUN pnpm install --filter ./servers/sites... --frozen-lockfile
+RUN pnpm install --filter ./servers/sites... --no-frozen-lockfile
 
 # Build that package
 WORKDIR /app/servers/sites

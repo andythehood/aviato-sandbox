@@ -12,7 +12,7 @@ COPY pnpm-lock.yaml package.json .npmrc pnpm-workspace.yaml ./
 COPY servers/gateway ./servers/gateway
 
 # Install only deps for this workspace package
-RUN pnpm install --filter ./servers/gateway... --frozen-lockfile
+RUN pnpm install --filter ./servers/gateway... --no-frozen-lockfile
 
 # Build that package
 WORKDIR /app/servers/gateway
