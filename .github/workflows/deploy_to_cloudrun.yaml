@@ -47,8 +47,8 @@ jobs:
             exit 0
           fi
 
-          # Extract unique app directories (e.g. web/core, web/admin)
-          APPS=$(echo "$CHANGED_PATHS" | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          # Extract unique directories
+          APPS=$(echo "$CHANGED_PATHS" | tr ' ' '\n' | grep '^servers/' | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
           echo "Detected apps: $APPS"
           echo "apps=$APPS" >> $GITHUB_OUTPUT
 
