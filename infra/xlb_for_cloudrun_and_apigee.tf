@@ -92,12 +92,14 @@ resource "google_compute_global_address" "xlb_ip" {
 }
 
 
-
-# # --- Existing Cloud Run backend service ---
-# data "google_cloud_run_service" "gateway_service" {
-#   name     = "gateway"
-#   location = var.region
-# }
+resource "google_compute_region_network_endpoint_group" "apigee_psc_neg" {
+  name                  = "apigee-psc-neg"
+  network_endpoint_type = "PRIVATE_SERVICE_CONNECT"
+  region                = var.region
+  network               = google_compute_network.apigee_vpc.self_link
+  subnetwork            = google_compute_subnetwork.apigee_vpc_apigee_subnet.self_link
+  psc_target_service    = google_apigee_instance.apigee_instance.service_attachment
+}
 
 
 resource "google_compute_region_network_endpoint_group" "gateway_neg" {
@@ -109,8 +111,6 @@ resource "google_compute_region_network_endpoint_group" "gateway_neg" {
     service = "gateway"
   }
 }
-
-
 
 resource "google_compute_backend_service" "gateway_backend" {
   name                  = "gateway-backend"
@@ -124,10 +124,40 @@ resource "google_compute_backend_service" "gateway_backend" {
   enable_cdn = false
 }
 
+resource "google_compute_backend_service" "api_backend" {
+  name                  = "api-backend"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  protocol              = "HTTPS"
+
+  backend {
+    group = google_compute_region_network_endpoint_group.apigee_psc_neg.id
+  }
+}
+
 # --- URL Map ---
 resource "google_compute_url_map" "xlb_map" {
   name            = "xlb-url-map"
   default_service = google_compute_backend_service.gateway_backend.id
+
+  host_rule {
+    hosts        = ["gateway.servers.tada.com.au"]
+    path_matcher = "gateway-matcher"
+  }
+
+  path_matcher {
+    name            = "gateway-matcher"
+    default_service = google_compute_backend_service.gateway_backend.id
+  }
+
+  host_rule {
+    hosts        = ["api.servers.tada.com.au", "api-dev.servers.tada.com.au"]
+    path_matcher = "api-matcher"
+  }
+
+  path_matcher {
+    name            = "api-matcher"
+    default_service = google_compute_backend_service.api_backend.id
+  }
 }
 
 # --- Target HTTPS Proxy ---
