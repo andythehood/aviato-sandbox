@@ -182,3 +182,20 @@ resource "google_apigee_target_server" "gateway_service_prod" {
 }
 
 
+# Create a Service Account that allows an Apigee Proxy to invoke a Cloud Run Service.
+# For production, following principle of least privlege, you should create a Service Account per proxy
+# and grant it Cloud Run Invoker on the specific Cloud Run Service(s) it needs to invoke. 
+# For Dev, you can create a single SA and grant it Cloud Run Invoker permission at the Project level
+
+
+resource "google_service_account" "proxy_sa" {
+  account_id   = "proxy-sa"
+  display_name = "Apigee Proxy Cloud Run Invoker Service Account"
+}
+
+
+resource "google_project_iam_member" "invoker_project_level" {
+  project = var.project_id
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:${google_service_account.proxy_sa.email}"
+}
