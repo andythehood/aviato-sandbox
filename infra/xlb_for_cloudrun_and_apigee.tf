@@ -132,6 +132,13 @@ resource "google_compute_backend_service" "api_backend" {
   backend {
     group = google_compute_region_network_endpoint_group.apigee_psc_neg.id
   }
+
+  custom_request_headers = [
+    # This entry overrides the client's Accept-Encoding header 
+    # to *only* allow 'gzip and defalate' to be sent to the backend.
+    # Apigee doesn't support 'br' encoding
+    "Accept-Encoding: gzip, deflate", 
+  ]
 }
 
 # --- URL Map ---
