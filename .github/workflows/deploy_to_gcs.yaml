@@ -2,57 +2,77 @@ name: Deploy changed apps → GCS (sequential)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: 
+      - "main" 
     paths:
       - "web/**"
   pull_request:
-    branches: [ "main" ]
+    branches: 
+      - "main" 
     paths:
       - "web/**"
   workflow_dispatch:
 
 jobs:
+  # detect-changes:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     apps: ${{ steps.detect.outputs.apps }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: 🔍 Detect changed apps
+  #       id: detect
+  #       run: |
+  #         echo "Detecting changed apps..."
+  #         # Compare with the base commit (for PRs) or previous SHA (for push)
+  #         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+  #           BASE=${{ github.event.pull_request.base.sha }}
+  #         else
+  #           BASE=${{ github.event.before }}
+  #         fi
+
+  #         CHANGED_PATHS=$(git diff --name-only "$BASE" ${{ github.sha }} | xargs)
+
+  #         if [ -z "$CHANGED_PATHS" ]; then
+  #           echo "No app changes detected."
+  #           echo "apps=[]" >> $GITHUB_OUTPUT
+  #           exit 0
+  #         fi
+
+  #         # Extract unique app directories (e.g. web/core, web/admin)
+  #         APPS=$(echo "$CHANGED_PATHS" | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+  #         echo "Detected apps: $APPS"
+  #         echo "apps=$APPS" >> $GITHUB_OUTPUT
+
   detect-changes:
+    name: Get changed apps
     runs-on: ubuntu-latest
     outputs:
-      apps: ${{ steps.detect.outputs.apps }}
+      apps: ${{ steps.filter.outputs.changes }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Filter changes
+        uses: dorny/paths-filter@v3
+        id: filter
         with:
-          fetch-depth: 0
-
-      - name: 🔍 Detect changed apps
-        id: detect
-        run: |
-          echo "Detecting changed apps..."
-          # Compare with the base commit (for PRs) or previous SHA (for push)
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BASE=${{ github.event.pull_request.base.sha }}
-          else
-            BASE=${{ github.event.before }}
-          fi
-
-          CHANGED_PATHS=$(git diff --name-only "$BASE" ${{ github.sha }} | xargs)
-
-          if [ -z "$CHANGED_PATHS" ]; then
-            echo "No app changes detected."
-            echo "apps=[]" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Extract unique app directories (e.g. web/core, web/admin)
-          APPS=$(echo "$CHANGED_PATHS" | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
-          echo "Detected apps: $APPS"
-          echo "apps=$APPS" >> $GITHUB_OUTPUT
+          filters: |
+            apps:
+              - 'web/**'
 
   build-and-deploy:
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.apps != '[]' && needs.detect-changes.outputs.apps != '' }}
+    if: ${{ needs.detect-changes.outputs.apps != '[]'  }}
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1  # sequential deploys
       matrix:
-        app: ${{ fromJson(needs.detect-changes.outputs.apps) }}
+        app: ${{ needs.detect-changes.outputs.apps }}
 
     env:
       NODE_VERSION: 22
