@@ -1,0 +1,124 @@
+name: Deploy changed apps → Cloud Run (sequential)
+
+on:
+  push:
+    branches: 
+      - "main" 
+    paths:
+      - "web/**"
+  pull_request:
+    branches: 
+      - "main" 
+    paths:
+      - "web/**"
+
+env:
+  REGION: us-central1
+  REPOSITORY: docker
+
+jobs:
+  detect-changes:
+    name: Get changed apps
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.filter.outputs.changes }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Filter changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            apps:
+              - 'web/**'
+
+  build-and-deploy:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.apps != '[]'  }}
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1  # sequential deploys
+      matrix:
+        app: ${{ needs.detect-changes.outputs.apps }}
+
+    env:
+      NODE_VERSION: 22
+      PNPM_VERSION: 10.20.0
+      GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+      GCS_BUCKET: ${{ vars.GCS_BUCKET_APPS }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      # - name: 📦 Setup PNPM (no Corepack)
+      #   run: |
+      #     npm install -g pnpm@10
+      #     pnpm --version
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build React app
+        working-directory: web/${{ matrix.app }}
+        run: |
+          echo "Building app: ${{ matrix.app }}"
+          pnpm build
+
+      - name: ☁️ Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: 🧰 Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT }}
+        #   export_default_credentials: true
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE=${{ env.REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT }}/${{ env.REPOSITORY }}/${{ matrix.app }}:${{ github.sha }}
+          docker build -t "$IMAGE" -f web/${{ matrix.app }}/Dockerfile .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE=${{ env.REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT }}/${{ env.REPOSITORY }}/${{ matrix.app }}:${{ github.sha }}
+
+          INGRESS="internal-and-cloud-load-balancing"
+
+          gcloud run deploy "${{ matrix.app }}" \
+          --image "$IMAGE" \
+          --port 80 \
+          --region "${{ env.REGION }}" \
+          --platform managed \
+          --allow-unauthenticated \
+          --ingress $INGRESS \
+          --vpc-egress all-traffic \
+          --network internal-vpc \
+          --subnet internal-vpc
+
+          # Explicitly set IAM policy for public access
+          gcloud run services add-iam-policy-binding "${{ matrix.app  }}" \
+            --region "${{ env.REGION }}" \
+            --member=allUsers \
+            --role=roles/run.invoker
+
+            
