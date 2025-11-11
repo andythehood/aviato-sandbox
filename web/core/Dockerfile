@@ -2,10 +2,10 @@
 FROM nginx:alpine
 
 # Copy custom nginx config
-COPY apps/core/nginx.conf /etc/nginx/conf.d/default.conf
+COPY web/core/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy pre-built application files
-COPY apps/core/dist /usr/share/nginx/html
+COPY web/core/dist /usr/share/nginx/html
 
 # Fix permissions for nginx user (already exists in nginx:alpine)
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
