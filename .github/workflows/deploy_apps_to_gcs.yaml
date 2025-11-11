@@ -72,7 +72,7 @@ jobs:
     strategy:
       max-parallel: 1  # sequential deploys
       matrix:
-        app: ${{ needs.detect-changes.outputs.apps }}
+        app: ${{ fromJson(needs.detect-changes.outputs.apps) }}
 
     env:
       NODE_VERSION: 22

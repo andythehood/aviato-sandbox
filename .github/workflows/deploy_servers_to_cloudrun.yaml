@@ -75,7 +75,7 @@ jobs:
     strategy:
       max-parallel: 3  # sequential deploys
       matrix:
-        server: ${{ needs.detect-changes.outputs.servers }}
+        server: ${{ fromJson(needs.detect-changes.outputs.servers) }}
     
     steps:
       - uses: actions/checkout@v4
