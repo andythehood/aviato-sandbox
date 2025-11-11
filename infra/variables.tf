@@ -3,7 +3,6 @@ variable "project_id" {
   type        = string
 }
 
-
 variable "region" {
   description = "Region for resources"
   type        = string
@@ -20,5 +19,8 @@ variable "site_hosts" {
 }
 
 
-
+# Required for Apigee Evaluation Orgs and Paid Orgs in VPC Mode
+variable "service_networking_peering_cidr" {
+  type = string
+}
 

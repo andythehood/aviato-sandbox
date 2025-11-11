@@ -1,0 +1,110 @@
+name: Build and Deploy to Cloud Run (Artifact Registry)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "servers/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "servers/**"
+env:
+  REGION: us-central1
+  REPOSITORY: docker
+  SERVICE_NAME: gateway
+
+  GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.detect.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Detect changed apps
+        id: detect
+        run: |
+          echo "Detecting changed apps..."
+          # Compare with the base commit (for PRs) or previous SHA (for push)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE=${{ github.event.pull_request.base.sha }}
+          else
+            BASE=${{ github.event.before }}
+          fi
+
+          CHANGED_PATHS=$(git diff --name-only "$BASE" ${{ github.sha }} | xargs)
+
+          if [ -z "$CHANGED_PATHS" ]; then
+            echo "No app changes detected."
+            echo "apps=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Extract unique directories
+          APPS=$(echo "$CHANGED_PATHS" | tr ' ' '\n' | grep '^servers/' | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          echo "Detected apps: $APPS"
+          echo "apps=$APPS" >> $GITHUB_OUTPUT
+
+  build-deploy:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.apps != '[]' && needs.detect-changes.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 3  # sequential deploys
+      matrix:
+        app: ${{ fromJson(needs.detect-changes.outputs.apps) }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE=${{env.REGION}}-docker.pkg.dev/${{ env.GCP_PROJECT }}/${{ env.REPOSITORY }}/${{ matrix.app }}:${{ github.sha }}
+          docker build -t "$IMAGE" -f servers/${{ matrix.app }}/Dockerfile .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE=${{env.REGION}}-docker.pkg.dev/${{ env.GCP_PROJECT }}/${{ env.REPOSITORY }}/${{ matrix.app}}:${{ github.sha }}
+
+          if [[ "${{ matrix.app }}" == "gateway" ]]; then
+            INGRESS="internal-and-cloud-load-balancing"
+          else
+            INGRESS="internal"
+          fi
+
+          gcloud run deploy "${{ matrix.app  }}" \
+          --image "$IMAGE" \
+          --region "${{ env.REGION }}" \
+          --platform managed \
+          --allow-unauthenticated \
+          --ingress $INGRESS \
+          --vpc-egress all-traffic \
+          --network internal-vpc \
+          --subnet internal-vpc
+
+          # Explicitly set IAM policy for public access
+          gcloud run services add-iam-policy-binding "${{ matrix.app  }}" \
+            --region "${{ env.REGION }}" \
+            --member=allUsers \
+            --role=roles/run.invoker
