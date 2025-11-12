@@ -115,7 +115,6 @@ resource "google_compute_region_network_endpoint_group" "gateway_neg" {
 resource "google_compute_backend_service" "gateway_backend" {
   name                  = "gateway-backend"
   protocol              = "HTTP"
-  timeout_sec           = 30
   load_balancing_scheme = "EXTERNAL_MANAGED"
 
   backend {
@@ -128,7 +127,7 @@ resource "google_compute_backend_service" "api_backend" {
   name                  = "api-backend"
   load_balancing_scheme = "EXTERNAL_MANAGED"
   protocol              = "HTTPS"
-
+  timeout_sec           = 300
   backend {
     group = google_compute_region_network_endpoint_group.apigee_psc_neg.id
   }
@@ -137,7 +136,7 @@ resource "google_compute_backend_service" "api_backend" {
     # This entry overrides the client's Accept-Encoding header 
     # to *only* allow 'gzip and defalate' to be sent to the backend.
     # Apigee doesn't support 'br' encoding
-    "Accept-Encoding: gzip, deflate", 
+    "Accept-Encoding: gzip, deflate",
   ]
 }
 

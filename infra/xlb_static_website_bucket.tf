@@ -57,7 +57,6 @@ locals {
   }]
 
   fqdn_hosts = concat(local.unique_fqdn_hosts, local.wildcard_host)
-
 }
 
 # -----------------------------
@@ -87,6 +86,54 @@ resource "google_compute_backend_bucket" "site_backends" {
 #     domains = [for h in local.fqdn_hosts : h.fqdn]
 #   }
 # }
+
+resource "google_compute_region_network_endpoint_group" "serverless_neg_admin" {
+  name                  = "admin-neg"
+  region                = var.region
+  network_endpoint_type = "SERVERLESS"
+
+  cloud_run {
+    service = "admin"
+  }
+  description = "Serverless NEG pointing at Admin Cloud Run service "
+}
+
+resource "google_compute_backend_service" "admin-be" {
+  name                  = "admin-cr-be"
+  protocol              = "HTTP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  enable_cdn            = false
+
+  backend {
+    group = google_compute_region_network_endpoint_group.serverless_neg_admin.id
+  }
+}
+
+resource "google_compute_region_network_endpoint_group" "serverless_neg_core" {
+  name                  = "core-neg"
+  region                = var.region
+  network_endpoint_type = "SERVERLESS"
+
+  cloud_run {
+    service = "core"
+  }
+  description = "Serverless NEG pointing at Core Cloud Run service "
+}
+
+resource "google_compute_backend_service" "core-be" {
+  name                  = "core-cr-be"
+  protocol              = "HTTP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  enable_cdn            = false
+  iap {
+    enabled = true
+  }
+
+  backend {
+    group = google_compute_region_network_endpoint_group.serverless_neg_core.id
+  }
+}
+
 
 # -----------------------------
 # 6️⃣   Advanced URL Map Host Match and Path rewrite
@@ -134,6 +181,26 @@ resource "google_compute_url_map" "advanced_map" {
         }
       }
     }
+  }
+
+  host_rule {
+    hosts        = ["admin-protected.apps.tada.com.au"]
+    path_matcher = "admin-protected"
+  }
+
+  path_matcher {
+    name            = "admin-protected"
+    default_service = google_compute_backend_service.admin-be.id
+  }
+
+  host_rule {
+    hosts        = ["core-protected.apps.tada.com.au"]
+    path_matcher = "core-protected"
+  }
+
+  path_matcher {
+    name            = "core-protected"
+    default_service = google_compute_backend_service.core-be.id
   }
 }
 

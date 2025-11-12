@@ -18,62 +18,62 @@ env:
   GCP_PROJECT: ${{ vars.GCP_PROJECT }}
 
 jobs:
-  detect-changes:
-    name: Get changed servers
-    runs-on: ubuntu-latest
-    outputs:
-      servers: ${{ steps.filter.outputs.changes }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Filter changes
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            servers:
-              - 'servers/**'
   # detect-changes:
+  #   name: Get changed servers
   #   runs-on: ubuntu-latest
   #   outputs:
-  #     apps: ${{ steps.detect.outputs.apps }}
+  #     servers: ${{ steps.filter.outputs.changes }}
+
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: Filter changes
+  #       uses: dorny/paths-filter@v3
+  #       id: filter
   #       with:
-  #         fetch-depth: 0
+  #         filters: |
+  #           servers:
+  #             - 'servers/**'
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      servers: ${{ steps.detect.outputs.servers }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-  #     - name: 🔍 Detect changed apps
-  #       id: detect
-  #       run: |
-  #         echo "Detecting changed apps..."
-  #         # Compare with the base commit (for PRs) or previous SHA (for push)
-  #         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-  #           BASE=${{ github.event.pull_request.base.sha }}
-  #         else
-  #           BASE=${{ github.event.before }}
-  #         fi
+      - name: 🔍 Detect changed servers
+        id: detect
+        run: |
+          echo "Detecting changed servers..."
+          # Compare with the base commit (for PRs) or previous SHA (for push)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE=${{ github.event.pull_request.base.sha }}
+          else
+            BASE=${{ github.event.before }}
+          fi
 
-  #         CHANGED_PATHS=$(git diff --name-only "$BASE" ${{ github.sha }} | xargs)
+          CHANGED_PATHS=$(git diff --name-only "$BASE" ${{ github.sha }} | xargs)
 
-  #         if [ -z "$CHANGED_PATHS" ]; then
-  #           echo "No app changes detected."
-  #           echo "apps=[]" >> $GITHUB_OUTPUT
-  #           exit 0
-  #         fi
+          if [ -z "$CHANGED_PATHS" ]; then
+            echo "No app changes detected."
+            echo "apps=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
-  #         # Extract unique directories
-  #         APPS=$(echo "$CHANGED_PATHS" | tr ' ' '\n' | grep '^servers/' | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
-  #         echo "Detected apps: $APPS"
-  #         echo "apps=$APPS" >> $GITHUB_OUTPUT
+          # Extract unique directories
+          SERVERS=$(echo "$CHANGED_PATHS" | tr ' ' '\n' | grep '^servers/' | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          echo "Detected servers: $SERVERS"
+          echo "servers=$SERVERS" >> $GITHUB_OUTPUT
 
   build-deploy:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.servers != '[]'  }}
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 3  # sequential deploys
+      max-parallel: 3  # 1 for sequential deploys
       matrix:
         server: ${{ fromJson(needs.detect-changes.outputs.servers) }}
     

@@ -71,7 +71,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.apps != '[]'  }}
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1  # sequential deploys
+      max-parallel: 3  # 1 for sequential deploys
       matrix:
         app: ${{ fromJson(needs.detect-changes.outputs.apps) }}
 
@@ -126,6 +126,7 @@ jobs:
           path: web/${{ matrix.app }}/dist
           destination: ${{ env.GCS_BUCKET }}/${{ matrix.app }}
           parent: false
+          process_gcloudignore: false
         #   overwrite: true
 
       - name: 🌎 Invalidate CDN cache for this app
