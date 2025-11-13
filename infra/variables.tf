@@ -18,7 +18,6 @@ variable "site_hosts" {
   type        = list(string)
 }
 
-
 # Required for Apigee Evaluation Orgs and Paid Orgs in VPC Mode
 variable "service_networking_peering_cidr" {
   type = string

@@ -1,7 +1,7 @@
 resource "google_artifact_registry_repository" "docker-repo" {
   location      = var.region
   repository_id = "docker"
-  description   = "example docker repository"
+  description   = "Docker repository"
   format        = "DOCKER"
 
   depends_on = [google_project_service.artifactregistry]
@@ -22,8 +22,6 @@ resource "google_compute_subnetwork" "internal_vpc_subnet" {
   private_ip_google_access = true
 }
 
-
-
 # -----------------------------
 # 2️⃣  Global IP Address
 # -----------------------------
@@ -31,7 +29,6 @@ resource "google_compute_global_address" "xlb_ip" {
   name       = "xlb-ip"
   depends_on = [google_project_service.compute]
 }
-
 
 resource "google_compute_region_network_endpoint_group" "apigee_psc_neg" {
   name                  = "apigee-psc-neg"
@@ -41,7 +38,6 @@ resource "google_compute_region_network_endpoint_group" "apigee_psc_neg" {
   subnetwork            = google_compute_subnetwork.apigee_vpc_apigee_subnet.self_link
   psc_target_service    = google_apigee_instance.apigee_instance.service_attachment
 }
-
 
 resource "google_compute_region_network_endpoint_group" "gateway_neg" {
   name                  = "gateway-neg"
@@ -87,7 +83,10 @@ resource "google_compute_url_map" "xlb_map" {
   default_service = google_compute_backend_service.gateway_backend.id
 
   host_rule {
-    hosts        = ["gateway.servers.tada.com.au"]
+    hosts = [
+      # "gateway.servers.tada.com.au",
+      "gateway.sandbox.hapana-dev.com"
+    ]
     path_matcher = "gateway-matcher"
   }
 
@@ -97,12 +96,12 @@ resource "google_compute_url_map" "xlb_map" {
   }
 
   host_rule {
-    hosts        = [
-      "api.servers.tada.com.au",
-      "api-dev.servers.tada.com.au",
+    hosts = [
+      # "api.servers.tada.com.au",
+      # "api-dev.servers.tada.com.au",
       "api.sandbox.hapana-dev.com",
       "api.sandbox.hapana.com"
-      ]
+    ]
     path_matcher = "api-matcher"
   }
 

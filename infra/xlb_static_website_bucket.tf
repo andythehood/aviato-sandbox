@@ -46,14 +46,14 @@ locals {
     {
       prefix = host
       rule   = host
-      fqdn   = "${host}.apps.tada.com.au"
+      fqdn   = "${host}.sandbox.hapana-dev.com"
       # fqdn   = "${host}-${google_compute_global_address.lb_ip.address}.nip.io"
     }
   ]
   wildcard_host = [{
     prefix = "core"
     rule   = "wildcard"
-    fqdn   = "*.apps.tada.com.au"
+    fqdn   = "*.sandbox.hapana-dev.com"
   }]
 
   fqdn_hosts = concat(local.unique_fqdn_hosts, local.wildcard_host)
@@ -134,7 +134,6 @@ resource "google_compute_backend_service" "core-be" {
   }
 }
 
-
 # -----------------------------
 # 6️⃣   Advanced URL Map Host Match and Path rewrite
 # -----------------------------
@@ -177,14 +176,16 @@ resource "google_compute_url_map" "advanced_map" {
             # Rewrite / → /<subfolder>/
             path_prefix_rewrite = "/${path_matcher.value.prefix}/"
           }
-
         }
       }
     }
   }
 
   host_rule {
-    hosts        = ["admin-protected.apps.tada.com.au", "admin-protected.sandbox.hapana-dev.com"]
+    hosts        = [
+      # "admin-protected.apps.tada.com.au",
+      "admin-protected.sandbox.hapana-dev.com"
+      ]
     path_matcher = "admin-protected"
   }
 
@@ -194,7 +195,10 @@ resource "google_compute_url_map" "advanced_map" {
   }
 
   host_rule {
-    hosts        = ["core-protected.apps.tada.com.au", "core-protected.sandbox.hapana-dev.com"]
+    hosts        = [
+      # "core-protected.apps.tada.com.au",
+      "core-protected.sandbox.hapana-dev.com"
+      ]
     path_matcher = "core-protected"
   }
 
