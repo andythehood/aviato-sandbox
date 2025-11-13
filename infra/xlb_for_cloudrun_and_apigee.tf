@@ -22,65 +22,6 @@ resource "google_compute_subnetwork" "internal_vpc_subnet" {
   private_ip_google_access = true
 }
 
-resource "google_certificate_manager_dns_authorization" "servers" {
-  name        = "dns-auth-servers"
-  location    = "global"
-  description = "The default dns"
-  domain      = "servers.tada.com.au"
-
-  depends_on = [google_project_service.certificatemanager]
-}
-
-resource "google_certificate_manager_certificate" "servers" {
-  name        = "dns-cert-servers"
-  description = "The default cert"
-  scope       = "DEFAULT"
-
-  managed {
-    domains = [
-      "servers.tada.com.au",
-      "*.servers.tada.com.au"
-    ]
-    dns_authorizations = [
-      google_certificate_manager_dns_authorization.servers.id,
-    ]
-  }
-}
-
-resource "google_certificate_manager_certificate_map" "servers" {
-  name        = "cert-map-servers"
-  description = "Default certificate map"
-}
-
-resource "google_certificate_manager_certificate_map_entry" "servers_default" {
-  name        = "cert-map-entry-servers-default"
-  description = "Default certificate map entry"
-  map         = google_certificate_manager_certificate_map.servers.name
-
-  certificates = [google_certificate_manager_certificate.servers.id]
-  hostname     = "servers.tada.com.au"
-}
-
-resource "google_certificate_manager_certificate_map_entry" "servers_wildcard" {
-  name        = "cert-map-entry-servers-wildcard"
-  description = "Default certificate map entry"
-  map         = google_certificate_manager_certificate_map.servers.name
-
-  certificates = [google_certificate_manager_certificate.servers.id]
-  hostname     = "*.servers.tada.com.au"
-}
-
-output "record_name_to_insert_servers" {
-  value = google_certificate_manager_dns_authorization.servers.dns_resource_record.0.name
-}
-
-output "record_type_to_insert_servers" {
-  value = google_certificate_manager_dns_authorization.servers.dns_resource_record.0.type
-}
-
-output "record_data_to_insert_servers" {
-  value = google_certificate_manager_dns_authorization.servers.dns_resource_record.0.data
-}
 
 
 # -----------------------------
@@ -156,7 +97,12 @@ resource "google_compute_url_map" "xlb_map" {
   }
 
   host_rule {
-    hosts        = ["api.servers.tada.com.au", "api-dev.servers.tada.com.au"]
+    hosts        = [
+      "api.servers.tada.com.au",
+      "api-dev.servers.tada.com.au",
+      "api.sandbox.hapana-dev.com",
+      "api.sandbox.hapana.com"
+      ]
     path_matcher = "api-matcher"
   }
 
@@ -170,7 +116,7 @@ resource "google_compute_url_map" "xlb_map" {
 resource "google_compute_target_https_proxy" "xlb_https_proxy" {
   name            = "xlb-https-proxy"
   url_map         = google_compute_url_map.xlb_map.id
-  certificate_map = "//certificatemanager.googleapis.com/${google_certificate_manager_certificate_map.servers.id}"
+  certificate_map = "//certificatemanager.googleapis.com/${google_certificate_manager_certificate_map.default.id}"
 
 }
 

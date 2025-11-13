@@ -184,7 +184,7 @@ resource "google_compute_url_map" "advanced_map" {
   }
 
   host_rule {
-    hosts        = ["admin-protected.apps.tada.com.au"]
+    hosts        = ["admin-protected.apps.tada.com.au", "admin-protected.sandbox.hapana-dev.com"]
     path_matcher = "admin-protected"
   }
 
@@ -194,7 +194,7 @@ resource "google_compute_url_map" "advanced_map" {
   }
 
   host_rule {
-    hosts        = ["core-protected.apps.tada.com.au"]
+    hosts        = ["core-protected.apps.tada.com.au", "core-protected.sandbox.hapana-dev.com"]
     path_matcher = "core-protected"
   }
 

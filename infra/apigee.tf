@@ -113,6 +113,7 @@ resource "google_apigee_envgroup" "dev_group" {
   org_id = google_apigee_organization.apigee_org.id
   hostnames = [
     "api-dev.servers.tada.com.au",
+    "api.sandbox.hapana-dev.com",
   ]
 }
 
@@ -126,6 +127,7 @@ resource "google_apigee_envgroup" "prod_group" {
   org_id = google_apigee_organization.apigee_org.id
   hostnames = [
     "api.servers.tada.com.au",
+    "api.sandbox.hapana.com",
   ]
 }
 
