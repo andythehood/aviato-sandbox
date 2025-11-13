@@ -84,7 +84,6 @@ resource "google_compute_url_map" "xlb_map" {
 
   host_rule {
     hosts = [
-      # "gateway.servers.tada.com.au",
       "gateway.sandbox.hapana-dev.com"
     ]
     path_matcher = "gateway-matcher"
@@ -97,8 +96,6 @@ resource "google_compute_url_map" "xlb_map" {
 
   host_rule {
     hosts = [
-      # "api.servers.tada.com.au",
-      # "api-dev.servers.tada.com.au",
       "api.sandbox.hapana-dev.com",
       "api.sandbox.hapana.com"
     ]

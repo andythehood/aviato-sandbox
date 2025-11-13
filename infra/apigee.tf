@@ -45,7 +45,6 @@ resource "google_service_networking_connection" "apigee_private_connection" {
   ]
 }
 
-
 locals {
   # FOR EVALUATION, allocate a /28 for management and runtime.
   # For PAID ORGS, choose to either deploy with VPC or not
@@ -57,7 +56,6 @@ locals {
   apigee_runtime_cidr_range = cidrsubnet(var.service_networking_peering_cidr, 7, 0) # 10.21.0.0/28
   apigee_mgmt_cidr_range    = cidrsubnet(var.service_networking_peering_cidr, 7, 1) # 10.21.0.16/28
 }
-
 
 # Apigee organization
 resource "google_apigee_organization" "apigee_org" {
@@ -111,7 +109,6 @@ resource "google_apigee_envgroup" "dev_group" {
   name   = "dev-group"
   org_id = google_apigee_organization.apigee_org.id
   hostnames = [
-    "api-dev.servers.tada.com.au",
     "api.sandbox.hapana-dev.com",
   ]
 }
@@ -125,7 +122,6 @@ resource "google_apigee_envgroup" "prod_group" {
   name   = "prod-group"
   org_id = google_apigee_organization.apigee_org.id
   hostnames = [
-    "api.servers.tada.com.au",
     "api.sandbox.hapana.com",
   ]
 }
