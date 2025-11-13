@@ -182,10 +182,10 @@ resource "google_compute_url_map" "advanced_map" {
   }
 
   host_rule {
-    hosts        = [
+    hosts = [
       # "admin-protected.apps.tada.com.au",
       "admin-protected.sandbox.hapana-dev.com"
-      ]
+    ]
     path_matcher = "admin-protected"
   }
 
@@ -195,10 +195,10 @@ resource "google_compute_url_map" "advanced_map" {
   }
 
   host_rule {
-    hosts        = [
+    hosts = [
       # "core-protected.apps.tada.com.au",
       "core-protected.sandbox.hapana-dev.com"
-      ]
+    ]
     path_matcher = "core-protected"
   }
 
@@ -232,152 +232,3 @@ resource "google_compute_global_forwarding_rule" "https_rule" {
   port_range            = "443"
   ip_protocol           = "TCP"
 }
-
-
-
-
-#   dynamic "host_rule" {
-#     for_each = local.fqdn_hosts
-#     content {
-#       hosts        = [host_rule.value.fqdn]
-#       path_matcher = host_rule.value.prefix
-#     }
-#   }
-
-# path_matcher {
-#   name            = "admin"
-#   default_service = google_compute_backend_bucket.site_backends["admin"].id
-#   default_custom_error_response_policy {
-#     error_response_rule {
-#       match_response_codes   = ["404"]             # Catch all 404 responses under /*
-#       path                   = "/admin/index.html" # Serve /index.html 
-#       override_response_code = 200
-#     }
-#     error_service = google_compute_backend_bucket.site_backends["admin"].id
-#   }
-
-#   route_rules {
-#     service  = google_compute_backend_bucket.site_backends["admin"].id
-#     priority = 1
-#     match_rules {
-#       prefix_match = "/"
-#     }
-#     route_action {
-#       url_rewrite {
-#         # Rewrite / → /<subfolder>/
-#         path_prefix_rewrite = "/admin/"
-#       }
-#     }
-#   }
-# }
-
-# path_matcher {
-#   name            = "core"
-#   default_service = google_compute_backend_bucket.site_backends["core"].id
-#   route_rules {
-#     service  = google_compute_backend_bucket.site_backends["core"].id
-#     priority = 1
-#     match_rules {
-#       prefix_match = "/"
-#     }
-#     route_action {
-#       url_rewrite {
-#         # Rewrite / → /<subfolder>/
-#         path_prefix_rewrite = "/core/"
-#       }
-#     }
-#   }
-# }
-
-# -----------------------------
-# # 2️⃣  Backend Bucket
-# # -----------------------------
-# resource "google_compute_backend_bucket" "cdn_backend" {
-#   name        = "${var.bucket_name}-be"
-#   bucket_name = google_storage_bucket.static_site.name
-#   enable_cdn  = true
-
-#   cdn_policy {
-#     cache_mode = "CACHE_ALL_STATIC"
-#   }
-#   depends_on = [google_project_service.compute]
-
-# }
-
-# -----------------------------
-# 3️⃣  URL Map (path-based routing)
-# -----------------------------
-# locals {
-#   fqdn_hosts = [
-#     for host in var.site_hosts :
-#     "${host}-${google_compute_global_address.lb_ip.address}.nip.io"
-#   ]
-# }
-
-
-
-
-# resource "google_compute_url_map" "cdn_map" {
-#   name = "${var.bucket_name}-url-map"
-
-#   default_service = google_compute_backend_bucket.cdn_backend.id
-
-#   dynamic "host_rule" {
-#     for_each = local.fqdn_hosts
-#     content {
-#       hosts        = [host_rule.value]
-#       path_matcher = replace(host_rule.value, ".", "-") # unique name per host
-#     }
-#   }
-
-#   dynamic "path_matcher" {
-#     for_each = local.fqdn_hosts
-#     content {
-#       name            = replace(path_matcher.value, ".", "-")
-#       default_service = google_compute_backend_bucket.cdn_backend.id
-#     }
-#   }
-# }
-
-# # -----------------------------
-# # 6️⃣   Advanced URL Map
-# # -----------------------------
-# resource "google_compute_url_map" "advanced_map" {
-#   name = "${var.bucket_name}-map"
-
-#   dynamic "host_rule" {
-#     for_each = local.fqdn_hosts
-#     content {
-#       hosts        = [host_rule.value.fqdn]
-#       path_matcher = host_rule.value.prefix
-#     }
-#   }
-
-#   dynamic "path_matcher" {
-#     for_each = local.fqdn_hosts
-#     content {
-#       name = path_matcher.value.prefix
-#      default_service = google_compute_backend_bucket.site_backends[path_matcher.value.prefix].id
-
-
-#       # All requests go to the app’s subfolder
-#       route_rules {
-#         priority = 1
-#         match_rules {
-#           prefix_match = "/"
-#         }
-#         route_action {
-#           url_rewrite {
-#             # Rewrite / → /<subfolder>/
-#             path_prefix_rewrite = "/${path_matcher.value.prefix}/"
-#           }
-#           weighted_backend_services {
-#             backend_service = google_compute_backend_bucket.site_backends[path_matcher.value.prefix].id
-#             weight          = 1
-#           }
-#         }
-#       }
-#     }
-#   }
-#   default_service = google_compute_backend_bucket.site_backends[var.site_hosts[0]].id
-# }
