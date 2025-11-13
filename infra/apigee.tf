@@ -15,7 +15,6 @@ resource "google_compute_subnetwork" "apigee_vpc_apigee_subnet" {
   project       = var.project_id
 }
 
-
 # Reserve IP range for service networking
 
 locals {
